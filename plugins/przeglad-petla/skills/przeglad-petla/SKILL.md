@@ -1,14 +1,15 @@
 ---
 name: przeglad-petla
-description: Pętla /code-review na gałęzi z poprawkami — przegląd na wybranym poziomie (domyślnie xhigh), weryfikacja zgłoszeń w kodzie, poprawki ważnych, commit, kolejny przegląd, aż runda nie da żadnego nowego ważnego zweryfikowanego zgłoszenia. Działa w każdym repo; zasady projektu bierze z instrukcji repo i nakładki. Używaj, gdy ktoś prosi o „pętlę review”, „review do skutku”, „/przeglad-petla”.
+description: Pętla /code-review na gałęzi z poprawkami — przegląd na wybranym poziomie (domyślnie ostatnio użyty w /code-review), weryfikacja zgłoszeń w kodzie, poprawki ważnych, commit, kolejny przegląd, aż runda nie da żadnego nowego ważnego zweryfikowanego zgłoszenia. Działa w każdym repo; zasady projektu bierze z instrukcji repo i nakładki. Używaj, gdy ktoś prosi o „pętlę review”, „review do skutku”, „/przeglad-petla”.
 argument-hint: "[low|medium|high|xhigh|max] [gałąź] [--max-rund=N] [--bez-testow]"
 ---
 
 # Pętla code-review do czystej rundy
 
 Argumenty: `$ARGUMENTS`
-- **poziom**: `low|medium|high|xhigh|max`, domyślnie `xhigh`. `max` tylko wtedy, gdy podano go wprost.
-  `ultra` odrzucasz (przegląd w chmurze, płatny, uruchamia go tylko człowiek),
+- **poziom**: `low|medium|high|xhigh|max`. Bez poziomu obowiązuje ten, którego `/code-review` użył ostatnio
+  (jak w samym `/code-review`). `max` tylko wtedy, gdy podano go wprost. `ultra` odrzucasz (przegląd w chmurze, płatny,
+  uruchamia go tylko człowiek),
 - **gałąź**: domyślnie bieżąca; gałąź domyślna repo (`main`/`master`) → zapytaj o gałąź,
 - `--max-rund=N`: limit rund, domyślnie 5,
 - `--bez-testow`: bez testów na końcu.
@@ -38,8 +39,10 @@ może zrobić, ani na push, PR, zmianę stanu PR, squash czy rebase.
 
 ## 1. Runda (powtarzaj)
 
-**a) Przegląd.** `SHA=$(git rev-parse --short HEAD)`. Wywołaj Skill `code-review` z argumentami `<poziom> <gałąź>`.
-Bez `--fix`, `--comment`, `--post`.
+**a) Przegląd.** `SHA=$(git rev-parse --short HEAD)`. Wywołaj Skill `code-review` z argumentami `<poziom> <gałąź>`,
+a gdy poziomu nie podano, samo `<gałąź>`: `/code-review` weźmie wtedy ostatnio użyty poziom. Poziom faktycznie użyty
+w rundzie odczytaj z wyniku przeglądu (pole `level` zgłoszeń) i użyj go w notatce i raporcie. Wszystkie rundy idą
+na tym samym poziomie. Bez `--fix`, `--comment`, `--post`.
 
 **b) Weryfikacja każdego zgłoszenia samodzielnie, w kodzie tego commita.** Prześledź wywołania, dane wejściowe
 i istniejące zabezpieczenia; werdykt przeglądu (CONFIRMED/PLAUSIBLE) to wskazówka, nie dowód. Jedna klasa na zgłoszenie:
