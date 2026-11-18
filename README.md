@@ -11,7 +11,7 @@ Marketplace pluginów Claude Code z moimi skillami.
 W Claude Code:
 
 ```
-/plugin marketplace add <konto>/claude-skills
+/plugin marketplace add kopolot/claude-skills
 /plugin install przeglad-petla@moje-skille
 ```
 
@@ -21,7 +21,7 @@ Aktualizacja po zmianach w repo: `/plugin marketplace update moje-skille`.
 Bez pluginów (krótsza nazwa, bez aktualizacji przez `/plugin`):
 
 ```bash
-git clone git@github.com:<konto>/claude-skills.git ~/src/claude-skills
+git clone git@github.com:kopolot/claude-skills.git ~/src/claude-skills
 ln -s ~/src/claude-skills/plugins/przeglad-petla/skills/przeglad-petla ~/.claude/skills/przeglad-petla
 ```
 

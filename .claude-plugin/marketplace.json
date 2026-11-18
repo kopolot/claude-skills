@@ -1,6 +1,6 @@
 {
   "name": "moje-skille",
-  "owner": { "name": "Konrad Majkrzyk" },
+  "owner": { "name": "kopolot" },
   "plugins": [
     {
       "name": "przeglad-petla",

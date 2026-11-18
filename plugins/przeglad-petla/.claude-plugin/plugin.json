@@ -2,5 +2,5 @@
   "name": "przeglad-petla",
   "version": "1.1.0",
   "description": "Pętla /code-review na wybranym poziomie z weryfikacją zgłoszeń i poprawkami, aż runda nie da nowego ważnego zgłoszenia",
-  "author": { "name": "Konrad Majkrzyk" }
+  "author": { "name": "kopolot" }
 }
