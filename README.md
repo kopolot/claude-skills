@@ -15,7 +15,7 @@ W Claude Code:
 /plugin install przeglad-petla@moje-skille
 ```
 
-Prywatne repo: Claude Code pobiera je przez gita, więc wystarczy działający `gh auth login` albo klucz SSH do GitHuba.
+Repo jest publiczne, więc instalacja nie wymaga logowania do GitHuba.
 Aktualizacja po zmianach w repo: `/plugin marketplace update moje-skille`.
 
 Bez pluginów (krótsza nazwa, bez aktualizacji przez `/plugin`):
