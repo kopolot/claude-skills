@@ -1,0 +1,11 @@
+{
+  "name": "moje-skille",
+  "owner": { "name": "Konrad Majkrzyk" },
+  "plugins": [
+    {
+      "name": "przeglad-petla",
+      "source": "./plugins/przeglad-petla",
+      "description": "Pętla /code-review z poprawkami do rundy bez nowych ważnych zgłoszeń"
+    }
+  ]
+}
