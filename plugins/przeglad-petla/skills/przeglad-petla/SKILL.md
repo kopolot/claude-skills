@@ -1,7 +1,7 @@
 ---
 name: przeglad-petla
 description: Pętla /code-review na gałęzi z poprawkami — przegląd na wybranym poziomie (domyślnie ostatnio użyty w /code-review), weryfikacja zgłoszeń w kodzie, poprawki ważnych, commit, kolejny przegląd, aż runda nie da żadnego nowego ważnego zweryfikowanego zgłoszenia. Działa w każdym repo; zasady projektu bierze z instrukcji repo i nakładki. Używaj, gdy ktoś prosi o „pętlę review”, „review do skutku”, „/przeglad-petla”.
-argument-hint: "[low|medium|high|xhigh|max] [gałąź] [--max-rund=N] [--bez-testow]"
+argument-hint: "[low|medium|high|xhigh|max] [gałąź] [--model=sonnet|opus|haiku|fable|sesja] [--max-rund=N] [--bez-testow]"
 ---
 
 # Pętla code-review do czystej rundy
@@ -11,11 +11,28 @@ Argumenty: `$ARGUMENTS`
   (jak w samym `/code-review`). `max` tylko wtedy, gdy podano go wprost. `ultra` odrzucasz (przegląd w chmurze, płatny,
   uruchamia go tylko człowiek),
 - **gałąź**: domyślnie bieżąca; gałąź domyślna repo (`main`/`master`) → zapytaj o gałąź,
+- `--model=<sonnet|opus|haiku|fable>`: model, na którym działa **sam przegląd** (krok 1a). Wartość zostaje zapamiętana
+  jako domyślna na kolejne uruchomienia (patrz „Model przeglądu”). `--model=sesja` kasuje zapamiętany wybór
+  i wraca do modelu bieżącej sesji. Weryfikacja zgłoszeń i poprawki zawsze idą na modelu sesji,
 - `--max-rund=N`: limit rund, domyślnie 5,
 - `--bez-testow`: bez testów na końcu.
 
 Wywołanie pętli to zgoda na poprawki **błędów** wskazanych przez przegląd. Nie jest zgodą na zmianę tego, co użytkownik
 może zrobić, ani na push, PR, zmianę stanu PR, squash czy rebase.
+
+## Model przeglądu
+
+Ustawienie leży w pliku `~/.claude/przeglad-petla/model` (jedna linia: `sonnet`, `opus`, `haiku` albo `fable`;
+brak pliku = model bieżącej sesji). Plik jest osobisty, dotyczy wszystkich repo i nie trafia do gita.
+
+1. Podano `--model=X`:
+   - `X` ∈ `sonnet|opus|haiku|fable` → `mkdir -p ~/.claude/przeglad-petla && printf '%s\n' X > ~/.claude/przeglad-petla/model`,
+     użyj `X` w tym uruchomieniu i napisz w raporcie, że zapamiętano go jako domyślny,
+   - `X` = `sesja` → `rm -f ~/.claude/przeglad-petla/model`, przegląd idzie na modelu sesji,
+   - inna wartość → stop, wypisz dozwolone i nic nie zapisuj.
+2. Nie podano `--model` → przeczytaj plik (`cat ~/.claude/przeglad-petla/model 2>/dev/null`). Wartość spoza listy
+   albo pusty plik traktuj jak brak ustawienia i napisz o tym w raporcie.
+3. Model ustalony w tym kroku nazywaj dalej „modelem przeglądu”. Brak = przegląd na modelu sesji.
 
 ## 0. Przygotowanie (raz)
 
@@ -39,10 +56,16 @@ może zrobić, ani na push, PR, zmianę stanu PR, squash czy rebase.
 
 ## 1. Runda (powtarzaj)
 
-**a) Przegląd.** `SHA=$(git rev-parse --short HEAD)`. Wywołaj Skill `code-review` z argumentami `<poziom> <gałąź>`,
-a gdy poziomu nie podano, samo `<gałąź>`: `/code-review` weźmie wtedy ostatnio użyty poziom. Poziom faktycznie użyty
-w rundzie odczytaj z wyniku przeglądu (pole `level` zgłoszeń) i użyj go w notatce i raporcie. Wszystkie rundy idą
-na tym samym poziomie. Bez `--fix`, `--comment`, `--post`.
+**a) Przegląd.** `SHA=$(git rev-parse --short HEAD)`. Argumenty przeglądu to `<poziom> <gałąź>`, a gdy poziomu
+nie podano, samo `<gałąź>`: `/code-review` weźmie wtedy ostatnio użyty poziom. Bez `--fix`, `--comment`, `--post`.
+- **Brak modelu przeglądu** → wywołaj Skill `code-review` z tymi argumentami (model sesji).
+- **Jest model przeglądu** → uruchom Agent z `model: "<model przeglądu>"` (bez `isolation`; subagent pracuje w tym samym
+  checkoucie). Prompt: wywołaj Skill `code-review` z argumentami `<...>` i w odpowiedzi zwróć **tekstem** pełną listę
+  zgłoszeń (plik:linia, opis, scenariusz awarii, werdykt, poziom `level`), niczego nie poprawiaj, nie commituj
+  i nie pisz do plików. Weryfikacja i poprawki dalej robisz sam, na modelu sesji.
+- Poziom faktycznie użyty w rundzie odczytaj z wyniku przeglądu (pole `level` zgłoszeń) i użyj go w notatce i raporcie.
+  Wszystkie rundy idą na tym samym poziomie; gdy poziomu nie podano, a pierwsza runda go ujawniła, kolejne wołaj
+  już z nim wprost (subagent nie musi znać ostatnio użytego poziomu sesji).
 
 **b) Weryfikacja każdego zgłoszenia samodzielnie, w kodzie tego commita.** Prześledź wywołania, dane wejściowe
 i istniejące zabezpieczenia; werdykt przeglądu (CONFIRMED/PLAUSIBLE) to wskazówka, nie dowód. Jedna klasa na zgłoszenie:
@@ -71,7 +94,7 @@ ma tanie i lokalne (składnia, linter, typy dla zmienionych plików).
 Bez stopek narzędzi i bez `Co-Authored-By` agenta, jeśli repo tego zabrania. Bez push.
 
 **f) Notatka rundy** w miejscu notatek: plik `code-review-<poziom>-<RRRR-MM-DD>-<SHA>.md` z nagłówkiem (gałąź, checkout,
-commit z poprawkami) i tabelą `# | Zgłoszenie | Weryfikacja | Decyzja` dla wszystkich zgłoszeń. Bez danych osobowych
+commit z poprawkami, model przeglądu) i tabelą `# | Zgłoszenie | Weryfikacja | Decyzja` dla wszystkich zgłoszeń. Bez danych osobowych
 i sekretów.
 
 Wróć do a) na nowym HEAD.
@@ -84,7 +107,8 @@ Wróć do a) na nowym HEAD.
 2. Zapisy po zakończeniu z nakładki (decyzje, stan tematu).
 3. Zwolnij blokady, które wziąłeś (tylko własne).
 4. Raport, krótko:
-   - poziom, liczba rund, SHA każdej, czy pętla zbiegła,
+   - poziom i model przeglądu (oraz czy zapamiętano go właśnie teraz, czy wzięto z ustawienia), liczba rund,
+     SHA każdej, czy pętla zbiegła,
    - commity z poprawkami, jednym zdaniem każdy,
    - **do decyzji**: każda pozycja jednym zdaniem z propozycją kierunku,
    - wynik testów albo że ich nie było,

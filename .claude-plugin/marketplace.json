@@ -1,11 +1,18 @@
 {
   "name": "moje-skille",
-  "owner": { "name": "kopolot" },
+  "owner": {
+    "name": "kopolot"
+  },
   "plugins": [
     {
       "name": "przeglad-petla",
       "source": "./plugins/przeglad-petla",
       "description": "Pętla /code-review z poprawkami do rundy bez nowych ważnych zgłoszeń"
+    },
+    {
+      "name": "przeglad",
+      "source": "./plugins/przeglad",
+      "description": "/code-review z wyborem modelu do przeglądu: samo zgłaszanie (/przeglad) albo z poprawkami (/przeglad-fix)"
     }
   ]
 }
