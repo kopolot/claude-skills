@@ -1,14 +1,15 @@
 ---
 name: przeglad-fix
 description: Jeden przegląd kodu z wyborem modelu (zapamiętywanym jako domyślny) i od razu poprawki ważnych zgłoszeń po samodzielnej weryfikacji w kodzie. Bez pętli, bez commita, bez pusha. Używaj, gdy ktoś prosi o „przegląd z poprawkami”, „review i napraw”, „/przeglad-fix”.
-argument-hint: "[low|medium|high|xhigh|max] [cel: PR#|gałąź|ścieżka] [--model=sonnet|opus|haiku|fable|sesja] [--bez-testow]"
+argument-hint: "[low|medium|high|xhigh|max] [cel: PR#|gałąź|ścieżka] [--model=sonnet|opus|haiku|fable|sesja] [--poziom=sesja] [--bez-testow]"
 ---
 
 # Przegląd z poprawkami (jedna runda)
 
 Argumenty: `$ARGUMENTS`
-- **poziom**: `low|medium|high|xhigh|max`; bez poziomu `/code-review` bierze ostatnio użyty. `max` tylko, gdy podano
-  wprost. `ultra` odrzucasz,
+- **poziom**: `low|medium|high|xhigh|max`; podany jest zapamiętywany jako domyślny (patrz „Poziom przeglądu”; `max` nie),
+  bez poziomu bierze się zapamiętany, a gdy go nie ma, `/code-review` bierze ostatnio użyty. `max` tylko, gdy podano
+  wprost. `--poziom=sesja` kasuje zapamiętany wybór. `ultra` odrzucasz,
 - **cel**: gałąź, numer PR albo ścieżka; bez celu bieżący diff. Poprawki idą do bieżącego checkoutu, więc cel inny
   niż bieżąca zmiana → zapytaj, zanim cokolwiek zmienisz,
 - `--model=<sonnet|opus|haiku|fable|sesja>`: model **przeglądu**, patrz niżej. Weryfikacja i poprawki idą na modelu sesji,
@@ -30,11 +31,25 @@ Wspólne z pluginem `przeglad-petla`, osobiste, we wszystkich repo.
    (napisz o tym).
 5. Poza tym skill nie zmienia modelu sesji ani żadnej konfiguracji Claude Code.
 
+## Poziom przeglądu
+
+Ustawienie: `~/.claude/przeglad-petla/poziom` (jedna linia: `low|medium|high|xhigh`; brak pliku = ostatnio użyty
+w `/code-review`). Wspólne z pozostałymi pluginami, osobiste, we wszystkich repo. Dotyczy tylko przeglądu;
+poprawki i weryfikacja nie mają poziomu.
+
+1. Podano poziom `X` ∈ `low|medium|high|xhigh` → `mkdir -p ~/.claude/przeglad-petla && printf '%s\n' X > ~/.claude/przeglad-petla/poziom`;
+   użyj `X` teraz i napisz, że zapamiętano go jako domyślny.
+2. Podano `max` → użyj go w tym uruchomieniu, **nie zapisuj** (najdroższy poziom, tylko na wyraźne życzenie za każdym razem).
+3. `--poziom=sesja` → `rm -f ~/.claude/przeglad-petla/poziom`, bez poziomu (`/code-review` weźmie ostatnio użyty).
+4. Nie podano nic → `cat ~/.claude/przeglad-petla/poziom 2>/dev/null` i przekaż odczytany poziom do `/code-review` wprost.
+   Pusty plik albo wartość spoza listy = brak ustawienia (napisz o tym).
+5. `ultra` odrzucasz. Poza tym skill nie zmienia żadnej konfiguracji Claude Code.
+
 ## Działanie
 
 1. **Start.** Przeczytaj instrukcje repo (`CLAUDE.md`, `AGENTS.md`, `CLAUDE.local.md`, jeśli są). `git status`: cudze,
    niezwiązane zmiany w plikach, które miałyby być poprawiane → pytaj, nie nadpisuj.
-2. **Przegląd.** Bez modelu: Skill `code-review` z `<poziom> <cel>`. Z modelem: Agent z `model: "<model>"` (bez
+2. **Przegląd.** Poziom ustalony wyżej, jeśli jest, przekaż wprost. Bez modelu: Skill `code-review` z `<poziom> <cel>`. Z modelem: Agent z `model: "<model>"` (bez
    `isolation`), prompt: wywołaj Skill `code-review` z `<poziom> <cel>` i zwróć **tekstem** pełną listę zgłoszeń
    (plik:linia, opis, scenariusz awarii, werdykt, poziom); niczego nie poprawiaj, nie commituj, nie pisz do plików.
    Bez `--fix`, `--comment`, `--post`.
@@ -54,7 +69,7 @@ Wspólne z pluginem `przeglad-petla`, osobiste, we wszystkich repo.
    Czerwone przez twoją poprawkę → napraw; nie da się → cofnij tę poprawkę i opisz w raporcie.
 5. **Bez commita i pusha.** Zmiany zostają w working tree do przejrzenia (`git diff`).
 6. **Raport**, krótko:
-   - model i poziom przeglądu (zapamiętany teraz czy z ustawienia), cel,
+   - model i poziom przeglądu (zapamiętane teraz czy z ustawienia), cel,
    - poprawione (plik:linia, jedno zdanie co i dlaczego),
    - **do decyzji** (jedno zdanie + propozycja kierunku),
    - drobne i fałszywe: sama liczba i powody fałszywych,

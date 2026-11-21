@@ -1,6 +1,6 @@
 {
   "name": "przeglad",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "/code-review z wyborem modelu do przeglądu (zapamiętywanym jako domyślny), samo zgłaszanie albo od razu z poprawkami",
   "author": { "name": "kopolot" }
 }

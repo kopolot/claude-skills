@@ -1,14 +1,15 @@
 ---
 name: przeglad-petla
 description: Pętla /code-review na gałęzi z poprawkami — przegląd na wybranym poziomie (domyślnie ostatnio użyty w /code-review), weryfikacja zgłoszeń w kodzie, poprawki ważnych, commit, kolejny przegląd, aż runda nie da żadnego nowego ważnego zweryfikowanego zgłoszenia. Działa w każdym repo; zasady projektu bierze z instrukcji repo i nakładki. Używaj, gdy ktoś prosi o „pętlę review”, „review do skutku”, „/przeglad-petla”.
-argument-hint: "[low|medium|high|xhigh|max] [gałąź] [--model=sonnet|opus|haiku|fable|sesja] [--max-rund=N] [--bez-testow]"
+argument-hint: "[low|medium|high|xhigh|max] [gałąź] [--model=sonnet|opus|haiku|fable|sesja] [--poziom=sesja] [--max-rund=N] [--bez-testow]"
 ---
 
 # Pętla code-review do czystej rundy
 
 Argumenty: `$ARGUMENTS`
-- **poziom**: `low|medium|high|xhigh|max`. Bez poziomu obowiązuje ten, którego `/code-review` użył ostatnio
-  (jak w samym `/code-review`). `max` tylko wtedy, gdy podano go wprost. `ultra` odrzucasz (przegląd w chmurze, płatny,
+- **poziom**: `low|medium|high|xhigh|max`. Podany jest zapamiętywany jako domyślny (patrz „Poziom przeglądu”; `max` nie).
+  Bez poziomu obowiązuje zapamiętany, a gdy go nie ma, ten, którego `/code-review` użył ostatnio
+  (jak w samym `/code-review`). `max` tylko wtedy, gdy podano go wprost. `--poziom=sesja` kasuje zapamiętany wybór. `ultra` odrzucasz (przegląd w chmurze, płatny,
   uruchamia go tylko człowiek),
 - **gałąź**: domyślnie bieżąca; gałąź domyślna repo (`main`/`master`) → zapytaj o gałąź,
 - `--model=<sonnet|opus|haiku|fable>`: model, na którym działa **sam przegląd** (krok 1a). Wartość zostaje zapamiętana
@@ -34,6 +35,20 @@ brak pliku = model bieżącej sesji). Plik jest osobisty, dotyczy wszystkich rep
    albo pusty plik traktuj jak brak ustawienia i napisz o tym w raporcie.
 3. Model ustalony w tym kroku nazywaj dalej „modelem przeglądu”. Brak = przegląd na modelu sesji.
 
+## Poziom przeglądu
+
+Ustawienie: `~/.claude/przeglad-petla/poziom` (jedna linia: `low|medium|high|xhigh`; brak pliku = ostatnio użyty
+w `/code-review`). Wspólne z pozostałymi pluginami, osobiste, we wszystkich repo. Dotyczy tylko przeglądu;
+poprawki i weryfikacja nie mają poziomu.
+
+1. Podano poziom `X` ∈ `low|medium|high|xhigh` → `mkdir -p ~/.claude/przeglad-petla && printf '%s\n' X > ~/.claude/przeglad-petla/poziom`;
+   użyj `X` teraz i napisz, że zapamiętano go jako domyślny.
+2. Podano `max` → użyj go w tym uruchomieniu, **nie zapisuj** (najdroższy poziom, tylko na wyraźne życzenie za każdym razem).
+3. `--poziom=sesja` → `rm -f ~/.claude/przeglad-petla/poziom`, bez poziomu (`/code-review` weźmie ostatnio użyty).
+4. Nie podano nic → `cat ~/.claude/przeglad-petla/poziom 2>/dev/null` i przekaż odczytany poziom do `/code-review` wprost.
+   Pusty plik albo wartość spoza listy = brak ustawienia (napisz o tym).
+5. `ultra` odrzucasz. Poza tym skill nie zmienia żadnej konfiguracji Claude Code.
+
 ## 0. Przygotowanie (raz)
 
 1. **Zasady projektu.** Przeczytaj instrukcje repo (`CLAUDE.md`, `AGENTS.md`, `CLAUDE.local.md`, `CONTRIBUTING`, jeśli są)
@@ -56,8 +71,8 @@ brak pliku = model bieżącej sesji). Plik jest osobisty, dotyczy wszystkich rep
 
 ## 1. Runda (powtarzaj)
 
-**a) Przegląd.** `SHA=$(git rev-parse --short HEAD)`. Argumenty przeglądu to `<poziom> <gałąź>`, a gdy poziomu
-nie podano, samo `<gałąź>`: `/code-review` weźmie wtedy ostatnio użyty poziom. Bez `--fix`, `--comment`, `--post`.
+**a) Przegląd.** `SHA=$(git rev-parse --short HEAD)`. Argumenty przeglądu to `<poziom> <gałąź>` (poziom z „Poziomu przeglądu”), a gdy poziomu
+nie ma, samo `<gałąź>`: `/code-review` weźmie wtedy ostatnio użyty poziom. Bez `--fix`, `--comment`, `--post`.
 - **Brak modelu przeglądu** → wywołaj Skill `code-review` z tymi argumentami (model sesji).
 - **Jest model przeglądu** → uruchom Agent z `model: "<model przeglądu>"` (bez `isolation`; subagent pracuje w tym samym
   checkoucie). Prompt: wywołaj Skill `code-review` z argumentami `<...>` i w odpowiedzi zwróć **tekstem** pełną listę
@@ -107,7 +122,7 @@ Wróć do a) na nowym HEAD.
 2. Zapisy po zakończeniu z nakładki (decyzje, stan tematu).
 3. Zwolnij blokady, które wziąłeś (tylko własne).
 4. Raport, krótko:
-   - poziom i model przeglądu (oraz czy zapamiętano go właśnie teraz, czy wzięto z ustawienia), liczba rund,
+   - poziom i model przeglądu (oraz czy zapamiętano je właśnie teraz, czy wzięto z ustawienia), liczba rund,
      SHA każdej, czy pętla zbiegła,
    - commity z poprawkami, jednym zdaniem każdy,
    - **do decyzji**: każda pozycja jednym zdaniem z propozycją kierunku,
