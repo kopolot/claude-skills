@@ -31,7 +31,7 @@ Ustawienie: `~/.claude/przeglad-petla/model` (jedna linia: `sonnet|opus|haiku|fa
 Wspólne dla `przeglad`, `przeglad-fix` i `przeglad-petla`, osobiste, we wszystkich repo.
 
 1. `--model=X`, `X` ∈ `sonnet|opus|haiku|fable` → użyj `X` jako modelu tego przeglądu.
-   - Bez `--once`: `mkdir -p ~/.claude/przeglad-petla && printf '%s\\n' X > ~/.claude/przeglad-petla/model`; napisz, że wybór zapisano jako domyślny.
+   - Bez `--once`: `mkdir -p ~/.claude/przeglad-petla && printf '%s\n' X > ~/.claude/przeglad-petla/model`; napisz, że wybór zapisano jako domyślny.
    - Z `--once`: **nie zapisuj** pliku; napisz, że to wybór jednorazowy.
 2. `--model=sesja` → przegląd na modelu sesji (bez osobnego wyboru modelu).
    - Bez `--once`: `rm -f ~/.claude/przeglad-petla/model`.
@@ -47,7 +47,7 @@ w `/code-review`). Wspólne dla trzech skilli, osobiste, we wszystkich repo. Dot
 weryfikacja zgłoszeń i poprawki idą na modelu sesji.
 
 1. Podano poziom `X` ∈ `low|medium|high|xhigh` → użyj `X` teraz.
-   - Bez `--once`: `mkdir -p ~/.claude/przeglad-petla && printf '%s\\n' X > ~/.claude/przeglad-petla/poziom`; napisz, że zapisano.
+   - Bez `--once`: `mkdir -p ~/.claude/przeglad-petla && printf '%s\n' X > ~/.claude/przeglad-petla/poziom`; napisz, że zapisano.
    - Z `--once`: **nie zapisuj** pliku; poziom obowiązuje tylko przy tym wywołaniu.
 2. Podano `max` → użyj tylko teraz i **nigdy nie zapisuj** (najdroższy poziom).
 3. `--poziom=sesja` → nie wymuszaj poziomu w argumentach `/code-review` (niech weźmie ostatnio użyty).
