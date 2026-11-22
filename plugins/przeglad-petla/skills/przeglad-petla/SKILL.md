@@ -1,7 +1,7 @@
 ---
 name: przeglad-petla
 description: Pętla /code-review na gałęzi z poprawkami — przegląd na wybranym poziomie (domyślnie ostatnio użyty w /code-review), weryfikacja zgłoszeń w kodzie, poprawki ważnych, commit, kolejny przegląd, aż runda nie da żadnego nowego ważnego zweryfikowanego zgłoszenia. Działa w każdym repo; zasady projektu bierze z instrukcji repo i nakładki. Używaj, gdy ktoś prosi o „pętlę review”, „review do skutku”, „/przeglad-petla”.
-argument-hint: "[low|medium|high|xhigh|max] [gałąź] [--model=sonnet|opus|haiku|fable|sesja] [--poziom=sesja] [--max-rund=N] [--bez-testow]"
+argument-hint: "[low|medium|high|xhigh|max] [gałąź] [--model=sonnet|opus|haiku|fable|sesja] [--poziom=sesja] [--once] [--max-rund=N] [--bez-testow]"
 ---
 
 # Pętla code-review do czystej rundy
@@ -21,32 +21,46 @@ Argumenty: `$ARGUMENTS`
 Wywołanie pętli to zgoda na poprawki **błędów** wskazanych przez przegląd. Nie jest zgodą na zmianę tego, co użytkownik
 może zrobić, ani na push, PR, zmianę stanu PR, squash czy rebase.
 
+## Jednorazowe nadpisanie ustawień (`--once`)
+
+`--once` oznacza **tylko to wywołanie skilla**, bez zmiany zapisanych preferencji modelu i poziomu.
+- Dotyczy zarówno jawnego poziomu (`high`, `medium` itd.), jak i `--model=X`.
+- Przy `--model=sesja --once` lub `--poziom=sesja --once` użyj ustawień sesji **tylko teraz**, nie usuwając zapisanych plików.
+- Jeśli nie podano jawnego modelu/poziomu, odczytaj zapisane ustawienie tak jak zwykle.
+- `--once` jest flagą samego skilla: **nie przekazuj jej do `/code-review` ani do argumentów jego wywołania**.
+- W `/przeglad-petla` wybrane tymczasowo ustawienia obowiązują we **wszystkich rundach tego jednego uruchomienia**.
+- Zweryfikuj poprawność argumentów modelu i poziomu przed zapisem jakichkolwiek preferencji; nieznane wartości oznaczają stop bez modyfikacji plików.
+
 ## Model przeglądu
 
-Ustawienie leży w pliku `~/.claude/przeglad-petla/model` (jedna linia: `sonnet`, `opus`, `haiku` albo `fable`;
-brak pliku = model bieżącej sesji). Plik jest osobisty, dotyczy wszystkich repo i nie trafia do gita.
+Ustawienie: `~/.claude/przeglad-petla/model` (jedna linia: `sonnet|opus|haiku|fable`; brak pliku = model sesji).
+Wspólne dla `przeglad`, `przeglad-fix` i `przeglad-petla`, osobiste, we wszystkich repo.
 
-1. Podano `--model=X`:
-   - `X` ∈ `sonnet|opus|haiku|fable` → `mkdir -p ~/.claude/przeglad-petla && printf '%s\n' X > ~/.claude/przeglad-petla/model`,
-     użyj `X` w tym uruchomieniu i napisz w raporcie, że zapamiętano go jako domyślny,
-   - `X` = `sesja` → `rm -f ~/.claude/przeglad-petla/model`, przegląd idzie na modelu sesji,
-   - inna wartość → stop, wypisz dozwolone i nic nie zapisuj.
-2. Nie podano `--model` → przeczytaj plik (`cat ~/.claude/przeglad-petla/model 2>/dev/null`). Wartość spoza listy
-   albo pusty plik traktuj jak brak ustawienia i napisz o tym w raporcie.
-3. Model ustalony w tym kroku nazywaj dalej „modelem przeglądu”. Brak = przegląd na modelu sesji.
+1. `--model=X`, `X` ∈ `sonnet|opus|haiku|fable` → użyj `X` jako modelu tego przeglądu.
+   - Bez `--once`: `mkdir -p ~/.claude/przeglad-petla && printf '%s\\n' X > ~/.claude/przeglad-petla/model`; napisz, że wybór zapisano jako domyślny.
+   - Z `--once`: **nie zapisuj** pliku; napisz, że to wybór jednorazowy.
+2. `--model=sesja` → przegląd na modelu sesji (bez osobnego wyboru modelu).
+   - Bez `--once`: `rm -f ~/.claude/przeglad-petla/model`.
+   - Z `--once`: pomiń zapisany model **tylko dla tego przeglądu**, nie usuwaj pliku.
+3. Inna wartość modelu → stop, wypisz dozwolone, nic nie zapisuj.
+4. Bez `--model` → `cat ~/.claude/przeglad-petla/model 2>/dev/null`; pusty plik albo wartość spoza listy = model sesji (zgłoś brak prawidłowego ustawienia).
+5. Poza tym skill nie zmienia modelu sesji ani żadnej konfiguracji Claude Code.
 
 ## Poziom przeglądu
 
 Ustawienie: `~/.claude/przeglad-petla/poziom` (jedna linia: `low|medium|high|xhigh`; brak pliku = ostatnio użyty
-w `/code-review`). Wspólne z pozostałymi pluginami, osobiste, we wszystkich repo. Dotyczy tylko przeglądu;
-poprawki i weryfikacja nie mają poziomu.
+w `/code-review`). Wspólne dla trzech skilli, osobiste, we wszystkich repo. Dotyczy tylko przeglądu;
+weryfikacja zgłoszeń i poprawki idą na modelu sesji.
 
-1. Podano poziom `X` ∈ `low|medium|high|xhigh` → `mkdir -p ~/.claude/przeglad-petla && printf '%s\n' X > ~/.claude/przeglad-petla/poziom`;
-   użyj `X` teraz i napisz, że zapamiętano go jako domyślny.
-2. Podano `max` → użyj go w tym uruchomieniu, **nie zapisuj** (najdroższy poziom, tylko na wyraźne życzenie za każdym razem).
-3. `--poziom=sesja` → `rm -f ~/.claude/przeglad-petla/poziom`, bez poziomu (`/code-review` weźmie ostatnio użyty).
-4. Nie podano nic → `cat ~/.claude/przeglad-petla/poziom 2>/dev/null` i przekaż odczytany poziom do `/code-review` wprost.
-   Pusty plik albo wartość spoza listy = brak ustawienia (napisz o tym).
+1. Podano poziom `X` ∈ `low|medium|high|xhigh` → użyj `X` teraz.
+   - Bez `--once`: `mkdir -p ~/.claude/przeglad-petla && printf '%s\\n' X > ~/.claude/przeglad-petla/poziom`; napisz, że zapisano.
+   - Z `--once`: **nie zapisuj** pliku; poziom obowiązuje tylko przy tym wywołaniu.
+2. Podano `max` → użyj tylko teraz i **nigdy nie zapisuj** (najdroższy poziom).
+3. `--poziom=sesja` → nie wymuszaj poziomu w argumentach `/code-review` (niech weźmie ostatnio użyty).
+   - Bez `--once`: `rm -f ~/.claude/przeglad-petla/poziom`.
+   - Z `--once`: **nie usuwaj** pliku, zignoruj jego wartość tylko podczas tego wywołania.
+4. Nie podano poziomu → `cat ~/.claude/przeglad-petla/poziom 2>/dev/null` i przekaż poprawną wartość wprost do `/code-review`.
+   Pusty plik albo wartość spoza listy = bez poziomu (napisz o tym).
 5. `ultra` odrzucasz. Poza tym skill nie zmienia żadnej konfiguracji Claude Code.
 
 ## 0. Przygotowanie (raz)
