@@ -51,9 +51,9 @@ domyślnie. Bez zapisanego poziomu `/code-review` bierze ostatnio użyty. `max` 
 ## Globalna konfiguracja Claude Code (opcjonalna)
 
 Repo zawiera także prywatny w zastosowaniu, ale publicznie wersjonowany zestaw ustawień globalnych:
-- `config/CLAUDE.md` — workflow `opusplan`: Opus High planuje, Sonnet High implementuje, Opus High robi review na żądanie. Haiku Explore zbiera fakty z codebase.
+- `config/CLAUDE.md` — workflow `opusplan`: Opus High planuje, Sonnet High implementuje, Opus Medium robi standardowe review na żądanie, a Opus High — review krytyczne. Haiku Explore zbiera fakty z codebase.
 - `config/agents/Explore.md` — read-only Explore na modelu Haiku.
-- `install.sh` — instalator symlinków do `~/.claude/`, z backupem istniejących plików.
+- `install.sh` — instalator symlinków do `~/.claude/`, z backupem istniejących plików. Przy pierwszej konfiguracji ustawia też preferencje review na Opus Medium, jeśli jeszcze ich nie ma.
 
 Instalacja na Linuxie:
 
@@ -69,7 +69,9 @@ Instalator tworzy linki:
 - `~/.claude/CLAUDE.md` -> `config/CLAUDE.md`
 - `~/.claude/agents/Explore.md` -> `config/agents/Explore.md`
 
-Zastane pliki/linki są przenoszone do katalogu `~/.claude/backups/claude-skills-...` przed instalacją. Instalator nie nadpisuje `settings.json`, nie zmienia `opusplan`, effort ani konfiguracji marketplace. Uruchom go po przejrzeniu zawartości `config/` — globalne instrukcje mogą zastąpić wcześniejsze lokalne ustawienia `CLAUDE.md`.
+Zastane pliki/linki są przenoszone do katalogu `~/.claude/backups/claude-skills-...` przed instalacją. Instalator nie nadpisuje `settings.json`, nie zmienia effort głównej sesji, `opusplan` ani konfiguracji marketplace. Ustawia tylko brakujące pliki preferencji review na `opus` i `medium`; istniejące wybory pozostawia bez zmian. Uruchom go po przejrzeniu zawartości `config/` — globalne instrukcje mogą zastąpić wcześniejsze lokalne ustawienia `CLAUDE.md`.
+
+Dla krytycznego review użyj np. `/przeglad high --model=opus` lub `/przeglad-petla high --model=opus`. **Uwaga:** zgodnie z zachowaniem tych skilli jawnie podany poziom `high` zostaje zapamiętany na przyszłość; aby wrócić do domyślnego Medium, wykonaj `/przeglad medium --model=opus` (lub użyj odpowiedniego wariantu pętli).
 
 **Marketplace pozostaje niezależny:** nadal instaluj i aktualizuj skille przez `/plugin`, jak opisano wyżej. `bash install.sh` dotyczy tylko globalnych instrukcji i agenta, nie pluginów.
 
