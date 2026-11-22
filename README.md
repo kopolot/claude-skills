@@ -4,9 +4,9 @@ Marketplace pluginów Claude Code z moimi skillami.
 
 | Plugin | Polecenie | Co robi |
 |---|---|---|
-| `przeglad-petla` | `/przeglad-petla [low\|medium\|high\|xhigh\|max] [gałąź] [--model=sonnet\|opus\|haiku\|fable\|sesja] [--poziom=sesja] [--max-rund=N] [--bez-testow]` | `/code-review` w pętli z weryfikacją zgłoszeń i poprawkami, aż runda nie da nowego ważnego zgłoszenia |
-| `przeglad` | `/przeglad [poziom] [cel] [--model=...]` | jednorazowy `/code-review` z wyborem modelu przeglądu, tylko zgłasza |
-| `przeglad` | `/przeglad-fix [poziom] [cel] [--model=...] [--bez-testow]` | jeden przegląd z wyborem modelu i od razu poprawki ważnych (bez commita) |
+| `przeglad-petla` | `/przeglad-petla [low\|medium\|high\|xhigh\|max] [gałąź] [--model=sonnet\|opus\|haiku\|fable\|sesja] [--poziom=sesja] [--once] [--max-rund=N] [--bez-testow]` | `/code-review` w pętli z weryfikacją zgłoszeń i poprawkami, aż runda nie da nowego ważnego zgłoszenia |
+| `przeglad` | `/przeglad [poziom] [cel] [--model=...] [--once]` | jednorazowy `/code-review` z wyborem modelu przeglądu, tylko zgłasza |
+| `przeglad` | `/przeglad-fix [poziom] [cel] [--model=...] [--once] [--bez-testow]` | jeden przegląd z wyborem modelu i od razu poprawki ważnych (bez commita) |
 
 ## Instalacja na komputerze
 
@@ -48,6 +48,51 @@ domyślnie. Bez zapisanego poziomu `/code-review` bierze ostatnio użyty. `max` 
 (nie zapisuje się), `--poziom=sesja` kasuje zapamiętany poziom.
 
 
+## Jednorazowy model i poziom: `--once`
+
+Wszystkie trzy skille obsługują `--once`. Flaga działa **tylko podczas bieżącego wywołania** i nie zmienia
+zapisanych wyborów w `~/.claude/przeglad-petla/model` i `~/.claude/przeglad-petla/poziom`.
+
+```text
+/przeglad high --once
+/przeglad-fix high --once
+/przeglad-petla high --once
+/przeglad medium --model=sonnet --once
+```
+
+- Bez `--once` zachowane jest dotychczasowe działanie: jawny model i poziom (poza `max`) zapisują się jako domyślne.
+- `--once` bez argumentów modelu i poziomu po prostu korzysta z istniejących preferencji.
+- `--model=sesja --once` i `--poziom=sesja --once` ignorują zapisane wybory tylko na tę jedną komendę — bez ich kasowania.
+- Dla `/przeglad-petla` wybór jednorazowy obowiązuje **we wszystkich rundach** uruchomionej pętli.
+- `max` pozostaje zawsze jednorazowy; `ultra` jest odrzucany. `--once` nie jest przekazywane do `/code-review`.
+
+Typowy schemat: standardowe review korzysta z zapisanego **Opus Medium**, a wyjątkowy przegląd wykonujesz
+przez `/przeglad high --once`. Kolejne zwykłe review nadal użyje Medium.
+
+## Pomysł na przyszłość: opcjonalny router `auto` (NIEZAIMPLEMENTOWANY)
+
+Koncepcja do przetestowania na rzeczywistych PR-ach, **nie istnieje jeszcze jako polecenie w skillach**.
+Nie mylić z wbudowanym Claude Code Auto Mode odpowiedzialnym za uprawnienia.
+
+Potencjalna składnia:
+```text
+/przeglad auto
+/przeglad-fix auto
+/przeglad-petla auto --max-rund=3
+```
+
+Założenia:
+- Zachować **Opus Medium jako standard**; router jest wyłącznie opcją uruchamianą jawnie.
+- Bez osobnego agenta AI do klasyfikacji: na początek proste, tanie reguły na podstawie faktycznego diffu,
+  zmienionych ścieżek i kontekstu zadania (nie same nazwy plików).
+- **High** sugerować lub wybierać przy ryzyku: autoryzacja, uprawnienia, płatności, migracje,
+  transakcje, concurrency, krytyczne operacje na danych i integracje.
+- **Medium** dla typowych zmian i w sytuacjach bez rozpoznanego wysokiego ryzyka.
+- Jawny wybór modelu/poziomu ma pierwszeństwo przed routerem; automatyczny wybór nie zmienia zapisanych preferencji.
+- Router może nie rozpoznać ryzyka w pozornie zwykłym pliku — nie stanowi gwarancji bezpieczeństwa.
+- Przed wdrożeniem: próbny tryb pokazujący wybrany poziom i powody, bez uruchamiania `/code-review`,
+  aby zweryfikować decyzje i rzeczywiste zużycie limitów.
+
 ## Globalna konfiguracja Claude Code (opcjonalna)
 
 Repo zawiera także prywatny w zastosowaniu, ale publicznie wersjonowany zestaw ustawień globalnych:
@@ -71,7 +116,7 @@ Instalator tworzy linki:
 
 Zastane pliki/linki są przenoszone do katalogu `~/.claude/backups/claude-skills-...` przed instalacją. Instalator nie nadpisuje `settings.json`, nie zmienia effort głównej sesji, `opusplan` ani konfiguracji marketplace. Ustawia tylko brakujące pliki preferencji review na `opus` i `medium`; istniejące wybory pozostawia bez zmian. Uruchom go po przejrzeniu zawartości `config/` — globalne instrukcje mogą zastąpić wcześniejsze lokalne ustawienia `CLAUDE.md`.
 
-Dla krytycznego review użyj np. `/przeglad high --model=opus` lub `/przeglad-petla high --model=opus`. **Uwaga:** zgodnie z zachowaniem tych skilli jawnie podany poziom `high` zostaje zapamiętany na przyszłość; aby wrócić do domyślnego Medium, wykonaj `/przeglad medium --model=opus` (lub użyj odpowiedniego wariantu pętli).
+Dla krytycznego review użyj np. `/przeglad high --model=opus` lub `/przeglad-petla high --model=opus`. **Uwaga:** bez `--once` jawne `high` zapisuje się na przyszłość; użyj `--once` dla jednorazowego High bez zmiany domyślnego Medium.
 
 **Marketplace pozostaje niezależny:** nadal instaluj i aktualizuj skille przez `/plugin`, jak opisano wyżej. `bash install.sh` dotyczy tylko globalnych instrukcji i agenta, nie pluginów.
 
