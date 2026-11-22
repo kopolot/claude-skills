@@ -46,3 +46,31 @@ zawsze idą na modelu sesji.
 Poziom działa tak samo: podany `low|medium|high|xhigh` zapisuje się w `~/.claude/przeglad-petla/poziom` i obowiązuje
 domyślnie. Bez zapisanego poziomu `/code-review` bierze ostatnio użyty. `max` jest tylko na jedno uruchomienie
 (nie zapisuje się), `--poziom=sesja` kasuje zapamiętany poziom.
+
+
+## Globalna konfiguracja Claude Code (opcjonalna)
+
+Repo zawiera także prywatny w zastosowaniu, ale publicznie wersjonowany zestaw ustawień globalnych:
+- `config/CLAUDE.md` — workflow `opusplan`: Opus High planuje, Sonnet High implementuje, Opus High robi review na żądanie. Haiku Explore zbiera fakty z codebase.
+- `config/agents/Explore.md` — read-only Explore na modelu Haiku.
+- `install.sh` — instalator symlinków do `~/.claude/`, z backupem istniejących plików.
+
+Instalacja na Linuxie:
+
+```bash
+git clone https://github.com/kopolot/claude-skills.git ~/src/claude-skills
+cd ~/src/claude-skills
+bash install.sh
+```
+
+Jeżeli repo jest już sklonowane, wykonaj `git pull` i `bash install.sh`.
+
+Instalator tworzy linki:
+- `~/.claude/CLAUDE.md` -> `config/CLAUDE.md`
+- `~/.claude/agents/Explore.md` -> `config/agents/Explore.md`
+
+Zastane pliki/linki są przenoszone do katalogu `~/.claude/backups/claude-skills-...` przed instalacją. Instalator nie nadpisuje `settings.json`, nie zmienia `opusplan`, effort ani konfiguracji marketplace. Uruchom go po przejrzeniu zawartości `config/` — globalne instrukcje mogą zastąpić wcześniejsze lokalne ustawienia `CLAUDE.md`.
+
+**Marketplace pozostaje niezależny:** nadal instaluj i aktualizuj skille przez `/plugin`, jak opisano wyżej. `bash install.sh` dotyczy tylko globalnych instrukcji i agenta, nie pluginów.
+
+**Bezpieczeństwo:** nie dodawaj do repo sekretów, tokenów ani historii z `~/.claude/`; repo jest publiczne.
