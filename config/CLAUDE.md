@@ -5,7 +5,8 @@
 Use the existing `opusplan` setup:
 - Opus High owns architecture and planning in Plan Mode.
 - Sonnet High owns implementation, debugging, and testing in Execution Mode.
-- Opus High performs independent final review when explicitly invoked.
+- Opus Medium performs standard independent final review when explicitly invoked.
+- Opus High is reserved for critical reviews (security, authorization, transactions, migrations, concurrency, and high-risk integrations), or when explicitly requested.
 
 These instructions do not set model selection or reasoning effort. Preserve the existing Claude Code configuration.
 
@@ -32,9 +33,11 @@ Use Explore for non-trivial repository searches or mapping unfamiliar modules wh
 
 Sonnet independently makes implementation decisions, edits code, runs tests, resolves failures, and verifies results. Never delegate implementation decisions to Haiku.
 
-### During Final Review — Opus High
+### During Final Review — Opus Medium by default
 
-Opus owns the independent review. Explore may assist with locating evidence but must not perform the final review or make its decisions.
+Opus owns the independent review. Use Medium for normal reviews and High for security-sensitive or high-risk changes, or when explicitly requested. Explore may assist with locating evidence but must not perform the final review or make its decisions.
+
+For the installed review plugins, the model and effort are selected via `~/.claude/przeglad-petla/model` and `~/.claude/przeglad-petla/poziom`. These are initialized to `opus` and `medium` by `install.sh` only if missing. Explicit plugin flags and existing user preferences take precedence; this file alone cannot switch the running model's effort.
 
 ## Delegation Guidelines
 
