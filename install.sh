@@ -29,6 +29,20 @@ install_link() {
 install_link "$REPO_DIR/config/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
 install_link "$REPO_DIR/config/agents/Explore.md" "$CLAUDE_DIR/agents/Explore.md"
 
+# Review plugins share their saved model/effort preferences.
+# Set sensible initial defaults without clobbering existing user choices.
+REVIEW_PREF_DIR="$CLAUDE_DIR/przeglad-petla"
+mkdir -p -- "$REVIEW_PREF_DIR"
+
+if [[ ! -e "$REVIEW_PREF_DIR/model" && ! -L "$REVIEW_PREF_DIR/model" ]]; then
+  printf 'opus\n' > "$REVIEW_PREF_DIR/model"
+  printf 'Initialized review model: opus\n'
+fi
+if [[ ! -e "$REVIEW_PREF_DIR/poziom" && ! -L "$REVIEW_PREF_DIR/poziom" ]]; then
+  printf 'medium\n' > "$REVIEW_PREF_DIR/poziom"
+  printf 'Initialized review effort: medium\n'
+fi
+
 if [[ -d "$BACKUP_DIR" ]]; then
   printf '\nPrevious configuration saved at: %s\n' "$BACKUP_DIR"
 fi
