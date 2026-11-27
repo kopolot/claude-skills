@@ -28,6 +28,7 @@ install_link() {
 
 install_link "$REPO_DIR/config/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
 install_link "$REPO_DIR/config/agents/Explore.md" "$CLAUDE_DIR/agents/Explore.md"
+install_link "$REPO_DIR/config/statusline-command.sh" "$CLAUDE_DIR/statusline-command.sh"
 
 # Review plugins share their saved model/effort preferences.
 # Set sensible initial defaults without clobbering existing user choices.

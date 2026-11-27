@@ -98,6 +98,7 @@ Założenia:
 Repo zawiera także prywatny w zastosowaniu, ale publicznie wersjonowany zestaw ustawień globalnych:
 - `config/CLAUDE.md` — workflow `opusplan`: Opus High planuje, Sonnet High implementuje, Opus Medium robi standardowe review na żądanie, a Opus High — review krytyczne. Haiku Explore zbiera fakty z codebase.
 - `config/agents/Explore.md` — read-only Explore na modelu Haiku.
+- `config/statusline-command.sh` — statusline: użytkownik@host, czas, katalog, gałąź git, model, effort oraz zużycie kontekstu `[ctx N%]` i limitów `[5h N%]` / `[7d N%]` (kolory: cyjan <50%, żółty ≥50%, czerwony ≥80%). Limity 5h/7d pojawiają się tylko dla subskrybentów Claude.ai, po pierwszej odpowiedzi API.
 - `install.sh` — instalator symlinków do `~/.claude/`, z backupem istniejących plików. Przy pierwszej konfiguracji ustawia też preferencje review na Opus Medium, jeśli jeszcze ich nie ma.
 
 Instalacja na Linuxie:
@@ -113,8 +114,9 @@ Jeżeli repo jest już sklonowane, wykonaj `git pull` i `bash install.sh`.
 Instalator tworzy linki:
 - `~/.claude/CLAUDE.md` -> `config/CLAUDE.md`
 - `~/.claude/agents/Explore.md` -> `config/agents/Explore.md`
+- `~/.claude/statusline-command.sh` -> `config/statusline-command.sh`
 
-Zastane pliki/linki są przenoszone do katalogu `~/.claude/backups/claude-skills-...` przed instalacją. Instalator nie nadpisuje `settings.json`, nie zmienia effort głównej sesji, `opusplan` ani konfiguracji marketplace. Ustawia tylko brakujące pliki preferencji review na `opus` i `medium`; istniejące wybory pozostawia bez zmian. Uruchom go po przejrzeniu zawartości `config/` — globalne instrukcje mogą zastąpić wcześniejsze lokalne ustawienia `CLAUDE.md`.
+Zastane pliki/linki są przenoszone do katalogu `~/.claude/backups/claude-skills-...` przed instalacją. Statusline wymaga wpisu `"statusLine": {"type": "command", "command": "bash ~/.claude/statusline-command.sh"}` w `~/.claude/settings.json` (instalator go nie dodaje). Instalator nie nadpisuje `settings.json`, nie zmienia effort głównej sesji, `opusplan` ani konfiguracji marketplace. Ustawia tylko brakujące pliki preferencji review na `opus` i `medium`; istniejące wybory pozostawia bez zmian. Uruchom go po przejrzeniu zawartości `config/` — globalne instrukcje mogą zastąpić wcześniejsze lokalne ustawienia `CLAUDE.md`.
 
 Dla krytycznego review użyj np. `/przeglad high --model=opus` lub `/przeglad-petla high --model=opus`. **Uwaga:** bez `--once` jawne `high` zapisuje się na przyszłość; użyj `--once` dla jednorazowego High bez zmiany domyślnego Medium.
 
