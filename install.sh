@@ -30,6 +30,30 @@ install_link "$REPO_DIR/config/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
 install_link "$REPO_DIR/config/agents/Explore.md" "$CLAUDE_DIR/agents/Explore.md"
 install_link "$REPO_DIR/config/statusline-command.sh" "$CLAUDE_DIR/statusline-command.sh"
 
+# Register the statusline in settings.json, only if none is configured yet.
+SETTINGS="$CLAUDE_DIR/settings.json"
+STATUSLINE_CMD="bash $CLAUDE_DIR/statusline-command.sh"
+if ! command -v jq >/dev/null 2>&1; then
+  printf 'jq not found: add statusLine to %s manually (command: %s)\n' "$SETTINGS" "$STATUSLINE_CMD"
+elif [[ ! -e "$SETTINGS" ]]; then
+  jq -n --arg cmd "$STATUSLINE_CMD" '{statusLine: {type: "command", command: $cmd}}' > "$SETTINGS"
+  printf 'Created %s with statusLine\n' "$SETTINGS"
+else
+  current="$(jq -r '.statusLine.command // empty' "$SETTINGS")"
+  if [[ "$current" == "$STATUSLINE_CMD" ]]; then
+    printf 'Statusline already configured in %s\n' "$SETTINGS"
+  elif [[ -n "$current" ]]; then
+    printf 'Kept existing statusLine in %s (command: %s)\n' "$SETTINGS" "$current"
+  else
+    mkdir -p -- "$BACKUP_DIR"
+    cp -- "$SETTINGS" "$BACKUP_DIR/settings.json"
+    tmp="$(mktemp "$SETTINGS.XXXXXX")"
+    jq --arg cmd "$STATUSLINE_CMD" '.statusLine = {type: "command", command: $cmd}' "$SETTINGS" > "$tmp"
+    mv -- "$tmp" "$SETTINGS"
+    printf 'Added statusLine to %s\n' "$SETTINGS"
+  fi
+fi
+
 # Review plugins share their saved model/effort preferences.
 # Set sensible initial defaults without clobbering existing user choices.
 REVIEW_PREF_DIR="$CLAUDE_DIR/przeglad-petla"

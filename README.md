@@ -116,7 +116,7 @@ Instalator tworzy linki:
 - `~/.claude/agents/Explore.md` -> `config/agents/Explore.md`
 - `~/.claude/statusline-command.sh` -> `config/statusline-command.sh`
 
-Zastane pliki/linki są przenoszone do katalogu `~/.claude/backups/claude-skills-...` przed instalacją. Statusline wymaga wpisu `"statusLine": {"type": "command", "command": "bash ~/.claude/statusline-command.sh"}` w `~/.claude/settings.json` (instalator go nie dodaje). Instalator nie nadpisuje `settings.json`, nie zmienia effort głównej sesji, `opusplan` ani konfiguracji marketplace. Ustawia tylko brakujące pliki preferencji review na `opus` i `medium`; istniejące wybory pozostawia bez zmian. Uruchom go po przejrzeniu zawartości `config/` — globalne instrukcje mogą zastąpić wcześniejsze lokalne ustawienia `CLAUDE.md`.
+Zastane pliki/linki są przenoszone do katalogu `~/.claude/backups/claude-skills-...` przed instalacją. Do `~/.claude/settings.json` instalator dopisuje tylko brakujący wpis `statusLine` (z kopią zapasową; istniejącego wpisu nie zmienia, wymaga `jq`) i poza tym nie modyfikuje `settings.json`, nie zmienia effort głównej sesji, `opusplan` ani konfiguracji marketplace. Ustawia tylko brakujące pliki preferencji review na `opus` i `medium`; istniejące wybory pozostawia bez zmian. Uruchom go po przejrzeniu zawartości `config/` — globalne instrukcje mogą zastąpić wcześniejsze lokalne ustawienia `CLAUDE.md`.
 
 Dla krytycznego review użyj np. `/przeglad high --model=opus` lub `/przeglad-petla high --model=opus`. **Uwaga:** bez `--once` jawne `high` zapisuje się na przyszłość; użyj `--once` dla jednorazowego High bez zmiany domyślnego Medium.
 
