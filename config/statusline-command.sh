@@ -43,10 +43,22 @@ fi
 color_pct() {
   if [ "$1" -ge 80 ]; then printf '0;31'; elif [ "$1" -ge 50 ]; then printf '0;33'; else printf '0;36'; fi
 }
+# Time left until a reset (epoch seconds) as "45m", "2h13m" or "3d4h"
+fmt_remaining() {
+  local left=$(( $1 - $(date +%s) ))
+  [ "$left" -lt 0 ] && left=0
+  local d=$(( left / 86400 )) h=$(( left % 86400 / 3600 )) m=$(( left % 3600 / 60 ))
+  if [ "$d" -gt 0 ]; then printf '%sd%sh' "$d" "$h"
+  elif [ "$h" -gt 0 ]; then printf '%sh%02dm' "$h" "$m"
+  else printf '%sm' "$m"; fi
+}
 for spec in "five_hour:5h" "seven_day:7d"; do
   key=${spec%%:*}; label=${spec##*:}
   val=$(echo "$input" | jq -r ".rate_limits.${key}.used_percentage // empty | if type==\"number\" then round else empty end")
+  reset=$(echo "$input" | jq -r ".rate_limits.${key}.resets_at // empty | if type==\"number\" then floor else empty end")
   if [ -n "$val" ]; then
+    # Show time until reset instead of the window name when the reset time is known
+    [ -n "$reset" ] && label=$(fmt_remaining "$reset")
     out="$out $(printf '\033[%sm[%s %s%%]\033[0m' "$(color_pct "$val")" "$label" "$val")"
   fi
 done
