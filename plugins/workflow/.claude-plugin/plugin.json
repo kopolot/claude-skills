@@ -1,0 +1,6 @@
+{
+  "name": "workflow",
+  "version": "1.0.0",
+  "description": "Planowanie zadania z Opus High (/planhigh)",
+  "author": { "name": "kopolot" }
+}

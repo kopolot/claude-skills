@@ -13,6 +13,11 @@
       "name": "przeglad",
       "source": "./plugins/przeglad",
       "description": "/code-review z wyborem modelu do przeglądu: samo zgłaszanie (/przeglad) albo z poprawkami (/przeglad-fix)"
+    },
+    {
+      "name": "workflow",
+      "source": "./plugins/workflow",
+      "description": "Planowanie zadania z Opus High: /planhigh"
     }
   ]
 }

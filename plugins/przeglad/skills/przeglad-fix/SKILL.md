@@ -1,7 +1,7 @@
 ---
 name: przeglad-fix
 description: Jeden przegląd kodu z wyborem modelu (zapamiętywanym jako domyślny) i od razu poprawki ważnych zgłoszeń po samodzielnej weryfikacji w kodzie. Bez pętli, bez commita, bez pusha. Używaj, gdy ktoś prosi o „przegląd z poprawkami”, „review i napraw”, „/przeglad-fix”.
-argument-hint: "[low|medium|high|xhigh|max] [cel: PR#|gałąź|ścieżka] [--model=sonnet|opus|haiku|fable|sesja] [--poziom=sesja] [--once] [--bez-testow]"
+argument-hint: "[low|medium|high|xhigh|max] [cel: PR#|gałąź|ścieżka] [--model=sonnet|opus|haiku|fable|sesja] [--poziom=sesja] [--effort=low|medium|high|xhigh|max|sesja] [--once] [--bez-testow]"
 ---
 
 # Przegląd z poprawkami (jedna runda)
@@ -13,6 +13,7 @@ Argumenty: `$ARGUMENTS`
 - **cel**: gałąź, numer PR albo ścieżka; bez celu bieżący diff. Poprawki idą do bieżącego checkoutu, więc cel inny
   niż bieżąca zmiana → zapytaj, zanim cokolwiek zmienisz,
 - `--model=<sonnet|opus|haiku|fable|sesja>`: model **przeglądu**, patrz niżej. Weryfikacja i poprawki idą na modelu sesji,
+- `--effort=<low|medium|high|xhigh|max|sesja>`: reasoning effort agenta przeglądu, patrz „Effort przeglądu”,
 - `--bez-testow`: bez uruchamiania testów po poprawkach.
 
 Wywołanie to zgoda na poprawki **błędów** wskazanych przez przegląd. Nie jest zgodą na zmianę zachowania widocznego dla
@@ -21,12 +22,12 @@ użytkownika, commit, push, PR, squash ani rebase.
 ## Jednorazowe nadpisanie ustawień (`--once`)
 
 `--once` oznacza **tylko to wywołanie skilla**, bez zmiany zapisanych preferencji modelu i poziomu.
-- Dotyczy zarówno jawnego poziomu (`high`, `medium` itd.), jak i `--model=X`.
-- Przy `--model=sesja --once` lub `--poziom=sesja --once` użyj ustawień sesji **tylko teraz**, nie usuwając zapisanych plików.
+- Dotyczy zarówno jawnego poziomu (`high`, `medium` itd.), jak i `--model=X` oraz `--effort=X`.
+- Przy `--model=sesja --once`, `--poziom=sesja --once` lub `--effort=sesja --once` użyj ustawień sesji **tylko teraz**, nie usuwając zapisanych plików.
 - Jeśli nie podano jawnego modelu/poziomu, odczytaj zapisane ustawienie tak jak zwykle.
 - `--once` jest flagą samego skilla: **nie przekazuj jej do `/code-review` ani do argumentów jego wywołania**.
 - W `/przeglad-petla` wybrane tymczasowo ustawienia obowiązują we **wszystkich rundach tego jednego uruchomienia**.
-- Zweryfikuj poprawność argumentów modelu i poziomu przed zapisem jakichkolwiek preferencji; nieznane wartości oznaczają stop bez modyfikacji plików.
+- Zweryfikuj poprawność argumentów modelu, poziomu i effortu przed zapisem jakichkolwiek preferencji; nieznane wartości oznaczają stop bez modyfikacji plików.
 
 ## Model przeglądu
 
@@ -60,12 +61,33 @@ weryfikacja zgłoszeń i poprawki idą na modelu sesji.
    Pusty plik albo wartość spoza listy = bez poziomu (napisz o tym).
 5. `ultra` odrzucasz. Poza tym skill nie zmienia żadnej konfiguracji Claude Code.
 
+## Effort przeglądu
+
+Ustawienie: `~/.claude/przeglad-petla/effort` (jedna linia: `low|medium|high|xhigh`; brak pliku = bez jawnego effortu,
+agent przeglądu dziedziczy go z sesji). Wspólne dla trzech skilli, osobiste, we wszystkich repo. To reasoning effort
+**agenta przeglądu** (parametr `effort` narzędzia Agent), a nie to samo co `poziom`: `poziom` to zakres `/code-review`
+(ile zgłoszeń i finderów). Dotyczy tylko przeglądu przez Agenta (model przeglądu inny niż model sesji); gdy
+`/code-review` wołasz bezpośrednio, obowiązuje effort sesji.
+
+1. `--effort=X`, `X` ∈ `low|medium|high|xhigh` → użyj `X` jako `effort` agenta przeglądu.
+   - Bez `--once`: `mkdir -p ~/.claude/przeglad-petla && printf '%s\n' X > ~/.claude/przeglad-petla/effort`; napisz, że zapisano.
+   - Z `--once`: **nie zapisuj** pliku; effort obowiązuje tylko przy tym wywołaniu.
+2. `--effort=max` → użyj tylko teraz i **nigdy nie zapisuj** (najdroższy effort).
+3. `--effort=sesja` → agent bez jawnego `effort` (dziedziczy z sesji).
+   - Bez `--once`: `rm -f ~/.claude/przeglad-petla/effort`.
+   - Z `--once`: **nie usuwaj** pliku, zignoruj jego wartość tylko podczas tego wywołania.
+4. Inna wartość → stop, wypisz dozwolone, nic nie zapisuj.
+5. Bez `--effort` → `cat ~/.claude/przeglad-petla/effort 2>/dev/null`; pusty plik albo wartość spoza listy = bez
+   jawnego effortu (napisz o tym).
+
 ## Działanie
 
 1. **Start.** Przeczytaj instrukcje repo (`CLAUDE.md`, `AGENTS.md`, `CLAUDE.local.md`, jeśli są). `git status`: cudze,
    niezwiązane zmiany w plikach, które miałyby być poprawiane → pytaj, nie nadpisuj.
-2. **Przegląd.** Poziom ustalony wyżej, jeśli jest, przekaż wprost. Bez modelu: Skill `code-review` z `<poziom> <cel>`. Z modelem: Agent z `model: "<model>"` (bez
-   `isolation`), prompt: wywołaj Skill `code-review` z `<poziom> <cel>` i zwróć **tekstem** pełną listę zgłoszeń
+2. **Przegląd.** Poziom ustalony wyżej, jeśli jest, przekaż wprost. Bez modelu albo przy modelu tej samej rodziny co model sesji
+   (nazwa z promptu systemowego, np. „Opus 5.5” → `opus`): Skill `code-review` z `<poziom> <cel>` bezpośrednio, bez Agenta
+   (effort sesji; jeśli `effort` był ustawiony, napisz jedną linią, że go pominięto). Z innym modelem: Agent z
+   `model: "<model>"` i, gdy ustalono effort, `effort: "<effort>"` (bez `isolation`), prompt: wywołaj Skill `code-review` z `<poziom> <cel>` i zwróć **tekstem** pełną listę zgłoszeń
    (plik:linia, opis, scenariusz awarii, werdykt, poziom); niczego nie poprawiaj, nie commituj, nie pisz do plików.
    Bez `--fix`, `--comment`, `--post`.
 3. **Weryfikacja każdego zgłoszenia samodzielnie, w kodzie.** Prześledź wywołania, dane wejściowe i istniejące
@@ -78,13 +100,21 @@ weryfikacja zgłoszeń i poprawki idą na modelu sesji.
    | **drobne** | kosmetyka, nazewnictwo, wydajność bez skutku, opinia o architekturze, brak testu przypadku bez błędu | bez zmian |
    | **fałszywe** | scenariusz nie zachodzi albo jest obsłużony | bez zmian, z powodem |
 
+**Głębokość weryfikacji** (koszt, nie pomijanie):
+- werdykt PLAUSIBLE albo brak werdyktu → pełne śledzenie w kodzie, jak wyżej,
+- CONFIRMED, które wygląda na **ważne** → i tak czytasz to miejsce, żeby je poprawić; przed edycją sprawdź scenariusz
+  i istniejące zabezpieczenia,
+- CONFIRMED, które z samego opisu jest **drobne** albo **do decyzji** (kosmetyka, nazewnictwo, uproszczenie,
+  zmiana zachowania lub zakresu) → klasyfikujesz z opisu, bez ponownego śledzenia kodu,
+- wyjątek: bezpieczeństwo, autoryzacja, dane, pieniądze i migracje zawsze przechodzą pełną weryfikację.
+
 4. **Poprawki ważnych.** Styl edytowanego pliku, zasady repo. Zmiana zachowania opisanego testem → popraw test;
    tania asercja na naprawiony błąd → dopisz. Po edycji kontrole, które repo ma tanie i lokalne (składnia, linter,
    typy dla zmienionych plików), a bez `--bez-testow` także szybkie testy obszaru zmian, jeśli repo je ma.
    Czerwone przez twoją poprawkę → napraw; nie da się → cofnij tę poprawkę i opisz w raporcie.
 5. **Bez commita i pusha.** Zmiany zostają w working tree do przejrzenia (`git diff`).
 6. **Raport**, krótko:
-   - model i poziom przeglądu (zapamiętane teraz czy z ustawienia), cel,
+   - model, poziom i effort przeglądu (zapamiętane teraz czy z ustawienia; albo że przegląd poszedł bez Agenta), cel,
    - poprawione (plik:linia, jedno zdanie co i dlaczego),
    - **do decyzji** (jedno zdanie + propozycja kierunku),
    - drobne i fałszywe: sama liczba i powody fałszywych,

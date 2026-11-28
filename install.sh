@@ -65,7 +65,11 @@ if [[ ! -e "$REVIEW_PREF_DIR/model" && ! -L "$REVIEW_PREF_DIR/model" ]]; then
 fi
 if [[ ! -e "$REVIEW_PREF_DIR/poziom" && ! -L "$REVIEW_PREF_DIR/poziom" ]]; then
   printf 'medium\n' > "$REVIEW_PREF_DIR/poziom"
-  printf 'Initialized review effort: medium\n'
+  printf 'Initialized review scope level: medium\n'
+fi
+if [[ ! -e "$REVIEW_PREF_DIR/effort" && ! -L "$REVIEW_PREF_DIR/effort" ]]; then
+  printf 'medium\n' > "$REVIEW_PREF_DIR/effort"
+  printf 'Initialized review agent effort: medium\n'
 fi
 
 if [[ -d "$BACKUP_DIR" ]]; then

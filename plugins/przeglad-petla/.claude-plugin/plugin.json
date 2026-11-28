@@ -1,6 +1,6 @@
 {
   "name": "przeglad-petla",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Pętla /code-review na wybranym poziomie z weryfikacją zgłoszeń i poprawkami, aż runda nie da nowego ważnego zgłoszenia",
   "author": { "name": "kopolot" }
 }

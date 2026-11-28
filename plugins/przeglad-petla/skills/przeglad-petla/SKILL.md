@@ -1,7 +1,7 @@
 ---
 name: przeglad-petla
 description: Pętla /code-review na gałęzi z poprawkami — przegląd na wybranym poziomie (domyślnie ostatnio użyty w /code-review), weryfikacja zgłoszeń w kodzie, poprawki ważnych, commit, kolejny przegląd, aż runda nie da żadnego nowego ważnego zweryfikowanego zgłoszenia. Działa w każdym repo; zasady projektu bierze z instrukcji repo i nakładki. Używaj, gdy ktoś prosi o „pętlę review”, „review do skutku”, „/przeglad-petla”.
-argument-hint: "[low|medium|high|xhigh|max] [gałąź] [--model=sonnet|opus|haiku|fable|sesja] [--poziom=sesja] [--once] [--max-rund=N] [--bez-testow]"
+argument-hint: "[low|medium|high|xhigh|max] [gałąź] [--model=sonnet|opus|haiku|fable|sesja] [--poziom=sesja] [--effort=low|medium|high|xhigh|max|sesja] [--once] [--max-rund=N] [--bez-testow]"
 ---
 
 # Pętla code-review do czystej rundy
@@ -15,6 +15,7 @@ Argumenty: `$ARGUMENTS`
 - `--model=<sonnet|opus|haiku|fable>`: model, na którym działa **sam przegląd** (krok 1a). Wartość zostaje zapamiętana
   jako domyślna na kolejne uruchomienia (patrz „Model przeglądu”). `--model=sesja` kasuje zapamiętany wybór
   i wraca do modelu bieżącej sesji. Weryfikacja zgłoszeń i poprawki zawsze idą na modelu sesji,
+- `--effort=<low|medium|high|xhigh|max|sesja>`: reasoning effort agenta przeglądu (patrz „Effort przeglądu”); obowiązuje we wszystkich rundach,
 - `--max-rund=N`: limit rund, domyślnie 5,
 - `--bez-testow`: bez testów na końcu.
 
@@ -24,12 +25,12 @@ może zrobić, ani na push, PR, zmianę stanu PR, squash czy rebase.
 ## Jednorazowe nadpisanie ustawień (`--once`)
 
 `--once` oznacza **tylko to wywołanie skilla**, bez zmiany zapisanych preferencji modelu i poziomu.
-- Dotyczy zarówno jawnego poziomu (`high`, `medium` itd.), jak i `--model=X`.
-- Przy `--model=sesja --once` lub `--poziom=sesja --once` użyj ustawień sesji **tylko teraz**, nie usuwając zapisanych plików.
+- Dotyczy zarówno jawnego poziomu (`high`, `medium` itd.), jak i `--model=X` oraz `--effort=X`.
+- Przy `--model=sesja --once`, `--poziom=sesja --once` lub `--effort=sesja --once` użyj ustawień sesji **tylko teraz**, nie usuwając zapisanych plików.
 - Jeśli nie podano jawnego modelu/poziomu, odczytaj zapisane ustawienie tak jak zwykle.
 - `--once` jest flagą samego skilla: **nie przekazuj jej do `/code-review` ani do argumentów jego wywołania**.
 - W `/przeglad-petla` wybrane tymczasowo ustawienia obowiązują we **wszystkich rundach tego jednego uruchomienia**.
-- Zweryfikuj poprawność argumentów modelu i poziomu przed zapisem jakichkolwiek preferencji; nieznane wartości oznaczają stop bez modyfikacji plików.
+- Zweryfikuj poprawność argumentów modelu, poziomu i effortu przed zapisem jakichkolwiek preferencji; nieznane wartości oznaczają stop bez modyfikacji plików.
 
 ## Model przeglądu
 
@@ -63,6 +64,25 @@ weryfikacja zgłoszeń i poprawki idą na modelu sesji.
    Pusty plik albo wartość spoza listy = bez poziomu (napisz o tym).
 5. `ultra` odrzucasz. Poza tym skill nie zmienia żadnej konfiguracji Claude Code.
 
+## Effort przeglądu
+
+Ustawienie: `~/.claude/przeglad-petla/effort` (jedna linia: `low|medium|high|xhigh`; brak pliku = bez jawnego effortu,
+agent przeglądu dziedziczy go z sesji). Wspólne dla trzech skilli, osobiste, we wszystkich repo. To reasoning effort
+**agenta przeglądu** (parametr `effort` narzędzia Agent), a nie to samo co `poziom`: `poziom` to zakres `/code-review`
+(ile zgłoszeń i finderów). Dotyczy tylko przeglądu przez Agenta (model przeglądu inny niż model sesji); gdy
+`/code-review` wołasz bezpośrednio, obowiązuje effort sesji.
+
+1. `--effort=X`, `X` ∈ `low|medium|high|xhigh` → użyj `X` jako `effort` agenta przeglądu.
+   - Bez `--once`: `mkdir -p ~/.claude/przeglad-petla && printf '%s\n' X > ~/.claude/przeglad-petla/effort`; napisz, że zapisano.
+   - Z `--once`: **nie zapisuj** pliku; effort obowiązuje tylko przy tym wywołaniu.
+2. `--effort=max` → użyj tylko teraz i **nigdy nie zapisuj** (najdroższy effort).
+3. `--effort=sesja` → agent bez jawnego `effort` (dziedziczy z sesji).
+   - Bez `--once`: `rm -f ~/.claude/przeglad-petla/effort`.
+   - Z `--once`: **nie usuwaj** pliku, zignoruj jego wartość tylko podczas tego wywołania.
+4. Inna wartość → stop, wypisz dozwolone, nic nie zapisuj.
+5. Bez `--effort` → `cat ~/.claude/przeglad-petla/effort 2>/dev/null`; pusty plik albo wartość spoza listy = bez
+   jawnego effortu (napisz o tym).
+
 ## 0. Przygotowanie (raz)
 
 1. **Zasady projektu.** Przeczytaj instrukcje repo (`CLAUDE.md`, `AGENTS.md`, `CLAUDE.local.md`, `CONTRIBUTING`, jeśli są)
@@ -87,8 +107,10 @@ weryfikacja zgłoszeń i poprawki idą na modelu sesji.
 
 **a) Przegląd.** `SHA=$(git rev-parse --short HEAD)`. Argumenty przeglądu to `<poziom> <gałąź>` (poziom z „Poziomu przeglądu”), a gdy poziomu
 nie ma, samo `<gałąź>`: `/code-review` weźmie wtedy ostatnio użyty poziom. Bez `--fix`, `--comment`, `--post`.
-- **Brak modelu przeglądu** → wywołaj Skill `code-review` z tymi argumentami (model sesji).
-- **Jest model przeglądu** → uruchom Agent z `model: "<model przeglądu>"` (bez `isolation`; subagent pracuje w tym samym
+- **Brak modelu przeglądu albo model tej samej rodziny co model sesji** (nazwa z promptu systemowego, np. „Opus 5.5” → `opus`;
+  oceniasz to w każdej rundzie, bo `opusplan` może zmienić model między trybami) → wywołaj Skill `code-review` z tymi
+  argumentami bezpośrednio, bez Agenta (effort sesji; jeśli `effort` był ustawiony, napisz raz, że go pominięto).
+- **Inny model przeglądu** → uruchom Agent z `model: "<model przeglądu>"` i, gdy ustalono effort, `effort: "<effort>"` (bez `isolation`; subagent pracuje w tym samym
   checkoucie). Prompt: wywołaj Skill `code-review` z argumentami `<...>` i w odpowiedzi zwróć **tekstem** pełną listę
   zgłoszeń (plik:linia, opis, scenariusz awarii, werdykt, poziom `level`), niczego nie poprawiaj, nie commituj
   i nie pisz do plików. Weryfikacja i poprawki dalej robisz sam, na modelu sesji.
@@ -105,6 +127,16 @@ i istniejące zabezpieczenia; werdykt przeglądu (CONFIRMED/PLAUSIBLE) to wskaz�
 | **do decyzji** | potwierdzone, ale naprawa zmienia zachowanie widoczne dla użytkownika, zakres zadania, uprawnienia, schemat bazy albo wymaga wyboru kierunku | **nie poprawiasz**; do raportu |
 | **drobne** | prawda, ale kosmetyka, nazewnictwo, wydajność bez realnego skutku, opinia o architekturze, brak testu przypadku bez błędu | bez zmian (wyjątek: 1–2 linie w pliku i tak zmienianym w tej rundzie) |
 | **fałszywe** | scenariusz nie zachodzi albo jest już obsłużony | bez zmian, z krótkim powodem |
+
+Najpierw odsiej zgłoszenia z rejestru odrzuconych i tematów zamkniętych (niżej), potem weryfikuj resztę.
+
+**Głębokość weryfikacji** (koszt, nie pomijanie):
+- werdykt PLAUSIBLE albo brak werdyktu → pełne śledzenie w kodzie, jak wyżej,
+- CONFIRMED, które wygląda na **ważne** → i tak czytasz to miejsce, żeby je poprawić; przed edycją sprawdź scenariusz
+  i istniejące zabezpieczenia,
+- CONFIRMED, które z samego opisu jest **drobne** albo **do decyzji** (kosmetyka, nazewnictwo, uproszczenie,
+  zmiana zachowania lub zakresu) → klasyfikujesz z opisu, bez ponownego śledzenia kodu,
+- wyjątek: bezpieczeństwo, autoryzacja, dane, pieniądze i migracje zawsze przechodzą pełną weryfikację.
 
 Tematy zamknięte z nakładki, z pamięci i z decyzji zapisanych w repo albo notatkach nie są ważne. Zgłoszenie z rejestru
 odrzuconych jest nowe tylko wtedy, gdy przegląd pokazuje konkretny scenariusz awarii, którego poprzednia ocena nie objęła.
@@ -136,7 +168,7 @@ Wróć do a) na nowym HEAD.
 2. Zapisy po zakończeniu z nakładki (decyzje, stan tematu).
 3. Zwolnij blokady, które wziąłeś (tylko własne).
 4. Raport, krótko:
-   - poziom i model przeglądu (oraz czy zapamiętano je właśnie teraz, czy wzięto z ustawienia), liczba rund,
+   - poziom, model i effort przeglądu (oraz czy zapamiętano je właśnie teraz, czy wzięto z ustawienia; ewentualnie że rundy poszły bez Agenta), liczba rund,
      SHA każdej, czy pętla zbiegła,
    - commity z poprawkami, jednym zdaniem każdy,
    - **do decyzji**: każda pozycja jednym zdaniem z propozycją kierunku,

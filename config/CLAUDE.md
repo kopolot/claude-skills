@@ -37,7 +37,7 @@ Sonnet independently makes implementation decisions, edits code, runs tests, res
 
 Opus owns the independent review. Use Medium for normal reviews and High for security-sensitive or high-risk changes, or when explicitly requested. Explore may assist with locating evidence but must not perform the final review or make its decisions.
 
-For the installed review plugins, the model and effort are selected via `~/.claude/przeglad-petla/model` and `~/.claude/przeglad-petla/poziom`. These are initialized to `opus` and `medium` by `install.sh` only if missing. Explicit plugin flags and existing user preferences take precedence; this file alone cannot switch the running model's effort.
+For the installed review plugins, the review model, the `/code-review` scope level and the review agent's reasoning effort are selected via `~/.claude/przeglad-petla/model`, `~/.claude/przeglad-petla/poziom` and `~/.claude/przeglad-petla/effort`. These are initialized to `opus`, `medium` and `medium` by `install.sh` only if missing. Explicit plugin flags and existing user preferences take precedence; this file alone cannot switch the running model's effort.
 
 ## Delegation Guidelines
 

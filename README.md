@@ -4,9 +4,10 @@ Marketplace pluginów Claude Code z moimi skillami.
 
 | Plugin | Polecenie | Co robi |
 |---|---|---|
-| `przeglad-petla` | `/przeglad-petla [low\|medium\|high\|xhigh\|max] [gałąź] [--model=sonnet\|opus\|haiku\|fable\|sesja] [--poziom=sesja] [--once] [--max-rund=N] [--bez-testow]` | `/code-review` w pętli z weryfikacją zgłoszeń i poprawkami, aż runda nie da nowego ważnego zgłoszenia |
-| `przeglad` | `/przeglad [poziom] [cel] [--model=...] [--once]` | jednorazowy `/code-review` z wyborem modelu przeglądu, tylko zgłasza |
-| `przeglad` | `/przeglad-fix [poziom] [cel] [--model=...] [--once] [--bez-testow]` | jeden przegląd z wyborem modelu i od razu poprawki ważnych (bez commita) |
+| `przeglad-petla` | `/przeglad-petla [low\|medium\|high\|xhigh\|max] [gałąź] [--model=sonnet\|opus\|haiku\|fable\|sesja] [--poziom=sesja] [--effort=low\|medium\|high\|xhigh\|max\|sesja] [--once] [--max-rund=N] [--bez-testow]` | `/code-review` w pętli z weryfikacją zgłoszeń i poprawkami, aż runda nie da nowego ważnego zgłoszenia |
+| `przeglad` | `/przeglad [poziom] [cel] [--model=...] [--effort=...] [--once]` | jednorazowy `/code-review` z wyborem modelu przeglądu, tylko zgłasza |
+| `przeglad` | `/przeglad-fix [poziom] [cel] [--model=...] [--effort=...] [--once] [--bez-testow]` | jeden przegląd z wyborem modelu i od razu poprawki ważnych (bez commita) |
+| `workflow` | `/planhigh [zadanie]` | planowanie w Plan Mode z Opus High; tylko ręcznie |
 
 ## Instalacja na komputerze
 
@@ -16,6 +17,7 @@ W Claude Code:
 /plugin marketplace add kopolot/claude-skills
 /plugin install przeglad-petla@moje-skille
 /plugin install przeglad@moje-skille
+/plugin install workflow@moje-skille
 ```
 
 Repo jest publiczne, więc instalacja nie wymaga logowania do GitHuba.
@@ -47,11 +49,25 @@ Poziom działa tak samo: podany `low|medium|high|xhigh` zapisuje się w `~/.clau
 domyślnie. Bez zapisanego poziomu `/code-review` bierze ostatnio użyty. `max` jest tylko na jedno uruchomienie
 (nie zapisuje się), `--poziom=sesja` kasuje zapamiętany poziom.
 
+`poziom` to zakres `/code-review` (ile zgłoszeń i finderów), a `effort` to reasoning effort agenta przeglądu
+(`effort` narzędzia Agent). Ustawiasz go `--effort=low|medium|high|xhigh` (zapisuje się w
+`~/.claude/przeglad-petla/effort`), `max` tylko jednorazowo, `--effort=sesja` kasuje zapamiętany wybór. Bez tego
+agent przeglądu dziedziczyłby effort sesji (np. `high` z `settings.json`). Czy findery code-review dziedziczą effort
+agenta, nie zostało zweryfikowane.
+
+Gdy model przeglądu jest tej samej rodziny co model sesji (np. `opus` w sesji na Opusie, w tym w trybie planowania
+`opusplan`), skille wołają `/code-review` bezpośrednio, bez pośredniego Agenta; wtedy obowiązuje effort sesji
+i `--effort` jest pomijany.
+
+W `/przeglad-fix` i `/przeglad-petla` zgłoszenia CONFIRMED, które z opisu są drobne albo „do decyzji”, są
+klasyfikowane bez ponownego śledzenia kodu. Pełna weryfikacja zostaje dla PLAUSIBLE, dla ważnych (i tak się je czyta
+przed poprawką) oraz zawsze dla bezpieczeństwa, autoryzacji, danych, pieniędzy i migracji.
+
 
 ## Jednorazowy model i poziom: `--once`
 
 Wszystkie trzy skille obsługują `--once`. Flaga działa **tylko podczas bieżącego wywołania** i nie zmienia
-zapisanych wyborów w `~/.claude/przeglad-petla/model` i `~/.claude/przeglad-petla/poziom`.
+zapisanych wyborów w `~/.claude/przeglad-petla/model`, `~/.claude/przeglad-petla/poziom` i `~/.claude/przeglad-petla/effort`.
 
 ```text
 /przeglad high --once
@@ -116,9 +132,9 @@ Instalator tworzy linki:
 - `~/.claude/agents/Explore.md` -> `config/agents/Explore.md`
 - `~/.claude/statusline-command.sh` -> `config/statusline-command.sh`
 
-Zastane pliki/linki są przenoszone do katalogu `~/.claude/backups/claude-skills-...` przed instalacją. Do `~/.claude/settings.json` instalator dopisuje tylko brakujący wpis `statusLine` (z kopią zapasową; istniejącego wpisu nie zmienia, wymaga `jq`) i poza tym nie modyfikuje `settings.json`, nie zmienia effort głównej sesji, `opusplan` ani konfiguracji marketplace. Ustawia tylko brakujące pliki preferencji review na `opus` i `medium`; istniejące wybory pozostawia bez zmian. Uruchom go po przejrzeniu zawartości `config/` — globalne instrukcje mogą zastąpić wcześniejsze lokalne ustawienia `CLAUDE.md`.
+Zastane pliki/linki są przenoszone do katalogu `~/.claude/backups/claude-skills-...` przed instalacją. Do `~/.claude/settings.json` instalator dopisuje tylko brakujący wpis `statusLine` (z kopią zapasową; istniejącego wpisu nie zmienia, wymaga `jq`) i poza tym nie modyfikuje `settings.json`, nie zmienia effort głównej sesji, `opusplan` ani konfiguracji marketplace. Ustawia tylko brakujące pliki preferencji review (`model` = `opus`, `poziom` i `effort` = `medium`); istniejące wybory pozostawia bez zmian. Uruchom go po przejrzeniu zawartości `config/` — globalne instrukcje mogą zastąpić wcześniejsze lokalne ustawienia `CLAUDE.md`.
 
-Dla krytycznego review użyj np. `/przeglad high --model=opus` lub `/przeglad-petla high --model=opus`. **Uwaga:** bez `--once` jawne `high` zapisuje się na przyszłość; użyj `--once` dla jednorazowego High bez zmiany domyślnego Medium.
+Dla krytycznego review użyj np. `/przeglad high --model=opus --effort=high --once` lub `/przeglad-petla high --model=opus --effort=high --once`. **Uwaga:** bez `--once` jawne `high` (poziom i effort) zapisuje się na przyszłość; `--once` daje jednorazowe High bez zmiany domyślnego Medium.
 
 **Marketplace pozostaje niezależny:** nadal instaluj i aktualizuj skille przez `/plugin`, jak opisano wyżej. `bash install.sh` dotyczy tylko globalnych instrukcji i agenta, nie pluginów.
 
