@@ -3,12 +3,12 @@
 ## Development Workflow
 
 Use the existing `opusplan` setup:
-- Opus High owns architecture and planning in Plan Mode.
-- Sonnet High owns implementation, debugging, and testing in Execution Mode.
-- Opus Medium performs standard independent final review when explicitly invoked.
-- Opus High is reserved for critical reviews (security, authorization, transactions, migrations, concurrency, and high-risk integrations), or when explicitly requested.
-
-These instructions do not set model selection or reasoning effort. Preserve the existing Claude Code configuration.
+- Opus Medium owns standard planning in Plan Mode.
+- Opus High owns complex planning when explicitly invoked via /planhigh.
+- Sonnet Medium owns implementation, debugging, and testing in Execution Mode.
+- Sonnet High is reserved for complex implementation or debugging when explicitly requested.
+- Opus Medium performs standard independent final review.
+- Opus High is reserved for critical reviews.
 
 ## Research Delegation
 
